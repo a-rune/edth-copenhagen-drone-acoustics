@@ -3,10 +3,7 @@ out/
 __pycache__/
 .dmypy.json
 
-# Ensure examples are kept
-!data/
-data/*
-!data/examples/
+data/
 uv.lock
 
 # Local artefacts (never commit weights or internal notebooks)
