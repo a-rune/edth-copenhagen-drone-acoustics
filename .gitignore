@@ -8,3 +8,8 @@ __pycache__/
 data/*
 !data/examples/
 uv.lock
+
+# Local artefacts (never commit weights or internal notebooks)
+*.pt
+Good_copy_of_Triangulation*.ipynb
+.claude/

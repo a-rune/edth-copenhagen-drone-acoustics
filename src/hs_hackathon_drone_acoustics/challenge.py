@@ -36,9 +36,9 @@ from hs_hackathon_drone_acoustics.train_fusion import (
 )
 from hs_hackathon_drone_acoustics import CLASSES
 
-# ---------------- Defaults (override via CLI) ----------------
-BASE_URL_DEFAULT = "http://172.104.137.51:8080"
-TOKEN_DEFAULT = "5d1c9048-9349-47cf-8783-ea19054657bb"
+# ---------------- Defaults (override via CLI / environment) ----------------
+BASE_URL_DEFAULT = os.environ.get("DRONE_HACKATHON_BASE_URL", "http://127.0.0.1:8080")
+TOKEN_DEFAULT = os.environ.get("DRONE_HACKATHON_TOKEN", "")
 TAB_DIM = 259  # ~19 engineered + 240 MFCC stats
 
 # Match your training config
@@ -311,6 +311,12 @@ def run_loop(weights="fusion_model.pt", base_url=BASE_URL_DEFAULT, token=TOKEN_D
     save_dataset_root: if set, save WAVs under <root>/<save_subdir>/<predicted-class>/.
                        By default only saves when server says 'Correct!'. Use --save_all to save every clip.
     """
+    if not (token or "").strip():
+        raise ValueError(
+            "Missing API token: set environment variable DRONE_HACKATHON_TOKEN or pass --token "
+            "(credentials are provided by the hackathon organisers)."
+        )
+
     try:
         torch.set_num_threads(max(1, int(threads)))
         if hasattr(torch, "set_num_interop_threads"):
@@ -447,8 +453,10 @@ def run_loop(weights="fusion_model.pt", base_url=BASE_URL_DEFAULT, token=TOKEN_D
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--weights", type=str, default="fusion_model.pt")
-    ap.add_argument("--base_url", type=str, default=BASE_URL_DEFAULT)
-    ap.add_argument("--token", type=str, default=TOKEN_DEFAULT)
+    ap.add_argument("--base_url", type=str, default=BASE_URL_DEFAULT,
+                    help="Competition API base URL (default: DRONE_HACKATHON_BASE_URL or 127.0.0.1:8080).")
+    ap.add_argument("--token", type=str, default=TOKEN_DEFAULT,
+                    help="Bearer token (default: DRONE_HACKATHON_TOKEN).")
     ap.add_argument("--tta", type=int, default=0, help="0=fastest; 1-3 adds small accuracy bump")
     ap.add_argument("--adaptive_tta", type=float, default=0.0,
                     help="Confidence threshold (0-1). If >0, run TTA only when initial confidence < threshold.")
@@ -483,7 +491,7 @@ if __name__ == "__main__":
     # NEW: saving toggles
     ap.add_argument("--save_dataset_root", type=str, default=None,
                     help=r'Root of your dataset (expects "<root>/<subset>/<class>/"). '
-                         r'Example: "C:\Users\strik\Downloads\drone_acoustics_train_val_data"')
+                         r'Example: "C:\path\to\drone_acoustics_train_val_data"')
     ap.add_argument("--save_subdir", type=str, default="train",
                     help='Subset dir to place saved files (default: "train")')
     ap.add_argument("--save_all", action="store_true",
